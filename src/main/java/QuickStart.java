@@ -9,10 +9,12 @@ public class QuickStart {
 
     public static void main(String[] args) {
 
-        String server = "127.0.0.1";
-        String username = "fwx";
-        String password = "fd123456";
+        String server = "192.168.1.22";
+        String username = "cad22-win7-u";
+        String password = "gofar";
         String namespace = "root\\cimv2";
+
+        //String[] cmdStr = { "cmd", "/C", "wmic /node:\"192.168.1.27\" /user:\"20_lmt_199\" /password:\"gofar\" service get /value" };
 
 
         SWbemLocator locator = new SWbemLocator(server,username,password,namespace);
@@ -28,7 +30,7 @@ public class QuickStart {
             System.out.println(object.getPropertyByName("State").getStringValue());
 
             //Stop AppMgmt service
-            object.execMethod("Stop");
+            //object.execMethod("Stop");
 
         } catch (WMIException e) {
             e.printStackTrace();
