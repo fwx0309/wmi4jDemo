@@ -4,11 +4,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.lang.management.ManagementFactory;
+import java.util.Map;
 
 
 import com.sun.management.OperatingSystemMXBean;
-      
-    /** *//**  
+import com.wmic_utils.WmicUtils;
+
+/** *//**
      * 获取系统信息的业务逻辑实现类.  
      * @author amg * @version 1.0 Creation date: 2008-3-11 - 上午10:06:06  
      */  
@@ -83,12 +85,53 @@ import com.sun.management.OperatingSystemMXBean;
          */  
         private double getCpuRatioForWindows() {   
             try {   
-                /*String procCmd = System.getenv("windir")
+                String procCmd = System.getenv("windir")
                         + "//system32//wbem//wmic.exe process get Caption,CommandLine,"
-                        + "KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperationCount";*/
-                String[] procCmd = { "cmd", "/C", "wmic /node:\"192.168.1.22\" /user:\"cad22-win7-u\" /password:\"gofar\" process get Caption,CommandLine,KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperationCount" };
+                        + "KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperationCount";
+                //String[] procCmd = { "cmd", "/C", "wmic /node:\"192.168.1.22\" /user:\"cad22-win7-u\" /password:\"gofar\" process get Caption,CommandLine,KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperationCount" };
 
-                String[] cmdStr = { "cmd", "/C", "wmic /node:\"192.168.1.22\" /user:\"cad22-win7-u\" /password:\"gofar\" cpu get /value" };
+                // 取进程信息
+                long[] c0 = readCpu(Runtime.getRuntime().exec(procCmd));
+                Map<String, String> map0 = WmicUtils.getProcesse("192.168.1.22", "cad22-win7-u", "gofar", "360zip.exe");
+                System.out.println(map0);
+                Thread.sleep(CPUTIME);   
+                long[] c1 = readCpu(Runtime.getRuntime().exec(procCmd));
+                Map<String, String> map1 = WmicUtils.getProcesse("192.168.1.22", "cad22-win7-u", "gofar", "360zip.exe");
+                System.out.println(map1);
+                if (c0 != null && c1 != null) {   
+                    long idletime = c1[0] - c0[0];   
+                    long busytime = c1[1] - c0[1];
+
+                    long kTime = Long.valueOf(map1.get("KernelModeTime")) - Long.valueOf(map0.get("KernelModeTime"));
+                    long uTime = Long.valueOf(map1.get("UserModeTime")) - Long.valueOf(map0.get("UserModeTime"));
+
+                    long countTime = (busytime + idletime);
+
+                    System.out.println(Double.valueOf(PERCENT * (kTime+uTime) / countTime).doubleValue());
+
+                    return Double.valueOf(PERCENT * (busytime) / countTime).doubleValue();
+                } else {   
+                    return 0.0;   
+                }   
+            } catch (Exception ex) {   
+                ex.printStackTrace();   
+                return 0.0;   
+            }   
+        }
+
+    /** *//********************************************
+     * 获得CPU使用率.
+     * @return 返回cpu使用率
+     * @author amg     * Creation date: 2008-4-25 - 下午06:05:11    /node:"192.168.1.22" /user:"cad22-win7-u" /password:"gofar"
+     */
+    private double getCpuRatioForWindows1() {
+        try {
+            String procCmd = System.getenv("windir")
+                    + "//system32//wbem//wmic.exe process get Caption,CommandLine,"
+                    + "KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperationCount";
+            //String[] procCmd = { "cmd", "/C", "wmic /node:\"192.168.1.22\" /user:\"cad22-win7-u\" /password:\"gofar\" process get Caption,CommandLine,KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperationCount" };
+
+                /*String[] cmdStr = { "cmd", "/C", "wmic /node:\"192.168.1.22\" /user:\"cad22-win7-u\" /password:\"gofar\" cpu get /value" };
                 Process p = Runtime.getRuntime().exec(cmdStr);
                 InputStreamReader isr = null;
                 BufferedReader br = null;
@@ -97,26 +140,24 @@ import com.sun.management.OperatingSystemMXBean;
                 br = new BufferedReader(isr);
                 while ((str = br.readLine()) != null) {
                     System.out.println(str);
-                }
+                }*/
 
-                // 取进程信息
-                long[] c0 = readCpu(Runtime.getRuntime().exec(procCmd));   
-                Thread.sleep(CPUTIME);   
-                long[] c1 = readCpu(Runtime.getRuntime().exec(procCmd));   
-                if (c0 != null && c1 != null) {   
-                    long idletime = c1[0] - c0[0];   
-                    long busytime = c1[1] - c0[1];   
-                    return Double.valueOf(   
-                            PERCENT * (busytime) / (busytime + idletime))   
-                            .doubleValue();   
-                } else {   
-                    return 0.0;   
-                }   
-            } catch (Exception ex) {   
-                ex.printStackTrace();   
-                return 0.0;   
-            }   
-        }   
+            // 取进程信息
+            long[] c0 = readCpu(Runtime.getRuntime().exec(procCmd));
+            Thread.sleep(CPUTIME);
+            long[] c1 = readCpu(Runtime.getRuntime().exec(procCmd));
+            if (c0 != null && c1 != null) {
+                long idletime = c1[0] - c0[0];
+                long busytime = c1[1] - c0[1];
+                return Double.valueOf(PERCENT * (busytime) / (busytime + idletime)).doubleValue();
+            } else {
+                return 0.0;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return 0.0;
+        }
+    }
       
         /** *//**  
          * 读取CPU信息.  
@@ -128,7 +169,7 @@ import com.sun.management.OperatingSystemMXBean;
             long[] retn = new long[2];   
             try {   
                 proc.getOutputStream().close();   
-                InputStreamReader ir = new InputStreamReader(proc.getInputStream());   
+                InputStreamReader ir = new InputStreamReader(proc.getInputStream(), "GBK");
                 LineNumberReader input = new LineNumberReader(ir);   
                 String line = input.readLine();   
                 if (line == null || line.length() < FAULTLENGTH) {   
@@ -143,36 +184,28 @@ import com.sun.management.OperatingSystemMXBean;
                 long idletime = 0;   
                 long kneltime = 0;   
                 long usertime = 0;   
-                while ((line = input.readLine()) != null) {   
+                while ((line = input.readLine()) != null) {
+
+                    System.out.println(line);
+
                     if (line.length() < wocidx) {   
                         continue;   
                     }   
-                    // 字段出现顺序：Caption,CommandLine,KernelModeTime,ReadOperationCount,   
-                    // ThreadCount,UserModeTime,WriteOperation   
-                    String caption = Bytes.substring(line, capidx, cmdidx - 1)   
-                            .trim();   
+                    // 字段出现顺序：Caption,CommandLine,KernelModeTime,ReadOperationCount,ThreadCount,UserModeTime,WriteOperation
+                    String caption = Bytes.substring(line, capidx, cmdidx - 1).trim();
                     String cmd = Bytes.substring(line, cmdidx, kmtidx - 1).trim();   
                     if (cmd.indexOf("wmic.exe") >= 0) {   
                         continue;   
                     }   
                     // log.info("line="+line);   
-                    if (caption.equals("System Idle Process")   
-                            || caption.equals("System")) {   
-                        idletime += Long.valueOf(   
-                                Bytes.substring(line, kmtidx, rocidx - 1).trim())   
-                                .longValue();   
-                        idletime += Long.valueOf(   
-                                Bytes.substring(line, umtidx, wocidx - 1).trim())   
-                                .longValue();   
+                    if (caption.equals("System Idle Process") || caption.equals("System")) {
+                        idletime += Long.valueOf(Bytes.substring(line, kmtidx, rocidx - 1).trim()).longValue();
+                        idletime += Long.valueOf(Bytes.substring(line, umtidx, wocidx - 1).trim()).longValue();
                         continue;   
                     }   
       
-                    kneltime += Long.valueOf(   
-                            Bytes.substring(line, kmtidx, rocidx - 1).trim())   
-                            .longValue();   
-                    usertime += Long.valueOf(   
-                            Bytes.substring(line, umtidx, wocidx - 1).trim())   
-                            .longValue();   
+                    kneltime += Long.valueOf(Bytes.substring(line, kmtidx, rocidx - 1).trim()).longValue();
+                    usertime += Long.valueOf(Bytes.substring(line, umtidx, wocidx - 1).trim()).longValue();
                 }   
                 retn[0] = idletime;   
                 retn[1] = kneltime + usertime;   
@@ -200,14 +233,14 @@ import com.sun.management.OperatingSystemMXBean;
             MonitorInfoBean monitorInfo = service.getMonitorInfoBean();   
             System.out.println("cpu占有率=" + monitorInfo.getCpuRatio());   
                
-            System.out.println("可使用内存=" + monitorInfo.getTotalMemory());   
-            System.out.println("剩余内存=" + monitorInfo.getFreeMemory());   
-            System.out.println("最大可使用内存=" + monitorInfo.getMaxMemory());   
-               
-            System.out.println("操作系统=" + monitorInfo.getOsName());   
-            System.out.println("总的物理内存=" + monitorInfo.getTotalMemorySize() + "kb");   
-            System.out.println("剩余的物理内存=" + monitorInfo.getFreeMemory() + "kb");   
-            System.out.println("已使用的物理内存=" + monitorInfo.getUsedMemory() + "kb");   
-            System.out.println("线程总数=" + monitorInfo.getTotalThread() + "kb");   
+//            System.out.println("可使用内存=" + monitorInfo.getTotalMemory());
+//            System.out.println("剩余内存=" + monitorInfo.getFreeMemory());
+//            System.out.println("最大可使用内存=" + monitorInfo.getMaxMemory());
+//
+//            System.out.println("操作系统=" + monitorInfo.getOsName());
+//            System.out.println("总的物理内存=" + monitorInfo.getTotalMemorySize() + "kb");
+//            System.out.println("剩余的物理内存=" + monitorInfo.getFreeMemory() + "kb");
+//            System.out.println("已使用的物理内存=" + monitorInfo.getUsedMemory() + "kb");
+//            System.out.println("线程总数=" + monitorInfo.getTotalThread() + "kb");
         }   
     } 

@@ -1,17 +1,80 @@
 package com.wmic_utils;
 
+import com.pojo.ClientConnectData;
+import com.pojo.ProcessEntity;
 import com.pojo.SoftwareInfo;
 import com.pojo.SystemInfo;
 import org.junit.Test;
 
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class WmicUtilsTest {
 
+    /**
+     * 测试获取所有数据
+     */
+    @Test
+    public void getAllData(){
+        List<ClientConnectData> list = new ArrayList<ClientConnectData>();
+        list.add(new ClientConnectData("192.168.1.107", "gofar_win7", "gofar","(win7 x86 旗舰版)"));
+        list.add(new ClientConnectData("192.168.1.22", "cad22-win7-u", "gofar","(win7 x64 旗舰版)"));
+        list.add(new ClientConnectData("192.168.1.27", "20_lmt_199", "gofar","(win7 x64 家庭版)"));
+        list.add(new ClientConnectData("192.168.1.10", "administrator", "gofarlic","(win7 x64 企业版)"));
+        list.add(new ClientConnectData("192.168.1.135", "gofar_win10", "gofar","(win10 x64 企业版)"));
+        list.add(new ClientConnectData("192.168.1.203", "Administrator", "gofar","(server2003 x64)"));
+        list.add(new ClientConnectData("192.168.1.184", "Administrator", "gofar@2019","(server2008 x64)"));
+        list.add(new ClientConnectData("192.168.1.20", "administrator", "gofar@2019","(server2012 x64)"));
+
+        for (ClientConnectData connectData : list) {
+            Map<String,Object> dataInfoMap = WmicUtils.getAllData(connectData.getAddress(), connectData.getUserName(), connectData.getPassword());
+            if (!dataInfoMap.isEmpty()){
+                System.out.println("************************** "+connectData.getAddress()+connectData.getVersion() +" **************************");
+                print(dataInfoMap);
+            }
+        }
+    }
+
+    public void print(Map<String,Object> dataInfoMap){
+        if("网络通讯异常!".equals(dataInfoMap.get("network"))){
+            System.out.println("network:"+dataInfoMap.get("network"));
+            return;
+        }
+
+        Set<Map.Entry<String, Object>> entries = dataInfoMap.entrySet();
+
+        for (Map.Entry<String, Object> entry : entries) {
+            if("network".equals(entry.getKey())
+                    || "sysName".equals(entry.getKey())
+                    || "osName".equals(entry.getKey())
+                    || "totalPhysicalMemory".equals(entry.getKey())
+                    || "availablePhysicalMemory".equals(entry.getKey())
+                    || "memoryUsageRate".equals(entry.getKey())
+                    || "CPUNum".equals(entry.getKey())
+                    || "sysName".equals(entry.getKey()) ){
+                System.out.println("============== "+entry.getKey()+" ==============");
+                System.out.println(entry.getValue());
+                System.out.println();
+            } else{
+                System.out.println("============== "+entry.getKey()+" ==============");
+                List list = (List)entry.getValue();
+                if(list.size()>0){
+                    for (Object o : list) {
+                        System.out.println(o);
+                        if ("cpuInfos".equals(entry.getKey())){
+                            Map m = (Map)o;
+                            System.out.println("CPU"+m.get("Name")+"使用率："+m.get("LoadPercentage")+"%");
+                        }
+                    }
+                }
+                System.out.println();
+            }
+        }
+    }
+
+    /**
+     * 打印信息到控制台
+     */
     @Test
     public void printInfo(){
         System.out.println("******************************** 192.168.1.107(win7 x86 旗舰版) ********************************");
@@ -21,43 +84,43 @@ public class WmicUtilsTest {
         System.out.println();
 
         System.out.println("******************************** 192.168.1.22(win7 x64 旗舰版) ********************************");
-        dashBoard("192.168.1.22", "cad22-win7-u", "gofar");
+        //dashBoard("192.168.1.22", "cad22-win7-u", "gofar");
         System.out.println();
         System.out.println();
         System.out.println();
 
         System.out.println("******************************** 192.168.1.27(win7 x64 家庭版) ********************************");
-        dashBoard("192.168.1.27", "20_lmt_199", "gofar");
+        //dashBoard("192.168.1.27", "20_lmt_199", "gofar");
         System.out.println();
         System.out.println();
         System.out.println();
 
         System.out.println("******************************** 192.168.1.10(win7 x64 企业版) ********************************");
-        dashBoard("192.168.1.10", "administrator", "gofarlic");
+        //dashBoard("192.168.1.10", "administrator", "gofarlic");
         System.out.println();
         System.out.println();
         System.out.println();
 
         System.out.println("******************************** 192.168.1.135(win10 x64 企业版) ********************************");
-        dashBoard("192.168.1.135", "gofar_win10", "gofar");
+        //dashBoard("192.168.1.135", "gofar_win10", "gofar");
         System.out.println();
         System.out.println();
         System.out.println();
 
         System.out.println("******************************** 192.168.1.203(server2003 x64) ********************************");
-        dashBoard("192.168.1.203", "Administrator", "gofar");
+        //dashBoard("192.168.1.203", "Administrator", "gofar");
         System.out.println();
         System.out.println();
         System.out.println();
 
         System.out.println("******************************** 192.168.1.184(server2008 x64) ********************************");
-        dashBoard("192.168.1.184", "Administrator", "gofar@2019");
+        //dashBoard("192.168.1.184", "Administrator", "gofar@2019");
         System.out.println();
         System.out.println();
         System.out.println();
 
         System.out.println("******************************** 192.168.1.20(server2012 x64) ********************************");
-        dashBoard("192.168.1.20", "administrator", "gofar@2019");
+        //dashBoard("192.168.1.20", "administrator", "gofar@2019");
         System.out.println();
         System.out.println();
         System.out.println();
@@ -125,11 +188,10 @@ public class WmicUtilsTest {
 
         //进程信息
         System.out.println("================== 进程信息 ==================");
-        List<Map<String, Object>> processes = WmicUtils.getProcesses(address, userName, passWord);
+        List<ProcessEntity> processes = WmicUtils.getProcessesByTasklist(address, userName, passWord);
 
-        for (Map<String, Object> process : processes) {
+        for (ProcessEntity process : processes) {
             System.out.println(process);
-            System.out.println("进程："+process.get("Caption")+"，使用内存："+Math.round(Float.valueOf(process.get("WorkingSetSize").toString())/1024/1024)+" MB");
         }
         System.out.println();
 
@@ -141,6 +203,7 @@ public class WmicUtilsTest {
         }*/
     }
 
+
     /**
      * 测试获取所有服务信息
      */
@@ -149,6 +212,30 @@ public class WmicUtilsTest {
         List<Map<String, Object>> services = WmicUtils.getServices("192.168.1.22", "cad22-win7-u", "gofar");
         for (Map<String, Object> service : services) {
             System.out.println(service);
+        }
+    }
+
+    /**
+     * 测试启动服务
+     */
+    @Test
+    public void getStartService(){
+        boolean startService = WmicUtils.startService("192.168.1.107", "gofar_win7", "gofar", "gfclient");
+
+        if (startService){
+            System.out.println("服务启动成功");
+        }
+    }
+
+    /**
+     * 测试关闭服务
+     */
+    @Test
+    public void getStopService(){
+        boolean stopService = WmicUtils.stopService("192.168.1.107", "gofar_win7", "gofar", "gfclient");
+
+        if (stopService){
+            System.out.println("服务已停止");
         }
     }
 
@@ -193,6 +280,12 @@ public class WmicUtilsTest {
         for (Map<String, Object> cpuInfo : cpuInfos) {
             System.out.println(cpuInfo);
         }
+    }
+
+    @Test
+    public void getCPUUsageRate(){
+        Map<String, Object> map = WmicUtils.getCpuRatioForWindows("192.168.1.22", "cad22-win7-u", "gofar");
+        System.out.println(map);
     }
 
     /**
@@ -241,6 +334,46 @@ public class WmicUtilsTest {
         List<Map<String, Object>> processes = WmicUtils.getProcesses("192.168.1.22", "cad22-win7-u", "gofar");
 
         for (Map<String, Object> process : processes) {
+            System.out.println(process);
+            System.out.println("进程："+process.get("Caption")+"，使用内存："+Math.round(Float.valueOf(process.get("WorkingSetSize").toString())/1024/1024)+" MB");
+        }
+    }
+
+
+    /**
+     * 测试创建进程
+     */
+    @Test
+    public void createProcesse(){
+        boolean createFlag = WmicUtils.createProcesse("192.168.1.107", "gofar_win7", "gofar", "C:\\Program Files\\gf_client\\release\\soft\\gf_cm.exe");
+
+        if (createFlag) {
+            System.out.println("创建进程成功");
+        }
+    }
+
+    /**
+     * 测试关闭进程
+     */
+    @Test
+    public void closeProcessesByName(){
+        boolean closeFlag = WmicUtils.closeProcessesByName("192.168.1.107", "gofar_win7", "gofar", "gf_cm.exe");
+
+        if (closeFlag) {
+            System.out.println("进程已关闭");
+        }
+    }
+
+
+
+    /**
+     * 测试获所有进程信息
+     */
+    @Test
+    public void getProcessesByTasklist(){
+        List<ProcessEntity> processes = WmicUtils.getProcessesByTasklist("192.168.1.22", "cad22-win7-u", "gofar");
+
+        for (ProcessEntity process : processes) {
             System.out.println(process);
         }
     }
@@ -306,5 +439,16 @@ public class WmicUtilsTest {
     @Test
     public void getPing(){
         WmicUtils.getPing("192.168.1.22");
+    }
+
+    /**
+     * 测试断开IPC连接
+     */
+    @Test
+    public void getEnvironment(){
+        List<Map<String, String>> environments = WmicUtils.getEnvironment("192.168.1.22", "cad22-win7-u", "gofar");
+        for (Map<String, String> environment : environments) {
+            System.out.println(environment);
+        }
     }
 }
